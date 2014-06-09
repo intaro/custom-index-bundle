@@ -19,10 +19,5 @@
             "Intaro\\CustomIndexBundle\\": ""
         }
     },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "0.1.x-dev"
-        }
-    },
     "target-dir" : "Intaro/CustomIndexBundle"
 }
