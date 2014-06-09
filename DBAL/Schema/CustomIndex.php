@@ -1,14 +1,16 @@
 <?php
 
-namespace Intaro\CRMBundle\DBAL\Schema;
+namespace Intaro\CustomIndexBundle\DBAL\Schema;
 
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\ExecutionContext;
 
+use Doctrine\DBAL\Connection;
+
 class CustomIndex
 {
-    const PREFIX = 'i_crm_cindex_';
+    const PREFIX = 'i_cindex_';
     
     const UNIQUE = 'unique';
 
@@ -25,7 +27,7 @@ class CustomIndex
     protected $tableName;
  
     /**
-     * Описываем валидацию для индекса
+     * validation
      *
      * @param ClassMetadata
     **/
@@ -49,15 +51,42 @@ class CustomIndex
     }
 
     /**
-     * Получаем sql для удаления индекса
+     * drop index
      *
-     * @param $indexName - имя индекса в БД
+     * @param Connection $con
+     *
+     * @return bool
+    **/
+    public static function drop(Connection $con, $indexId)
+    {
+        $platform = $con->getDatabasePlatform()
+            ->getName();
+        
+        $sql = self::getDropIndexSql($platform, $indexId);
+        
+        $st = $con->prepare($sql);
+        return $st->execute();
+    }
+
+    /**
+     * sql for index delete
+     *
+     * @param $platform
+     * @param $indexName - index name in db
      *
      * @return string - sql
     **/
-    public static function getDropIndexSql($indexName)
+    public static function getDropIndexSql($platform, $indexName)
     {
-        return 'DROP INDEX ' . $indexName;
+        $sql = '';
+        switch($platform) {
+            case 'postgresql':
+                $sql = 'DROP INDEX ' . $indexName;
+                break;
+            default:
+                throw new \LogicException("Platform {$platform} does not support");
+        }
+        return $sql;
     }
 
     public function __construct($tableName, $columns, $name = '', $unique = false, $using = '')
@@ -76,7 +105,7 @@ class CustomIndex
     }
 
     /**
-     * Проверяем содержимое columns
+     * check columns field
      *
      * @param ExecutionContext $context
     **/
@@ -88,38 +117,66 @@ class CustomIndex
             }
         }
     }
-  
+
     /**
-     * Получаем sql для создания индекса
+     * create index
+     *
+     * @param Connection $con
+     *
+     * @return bool
+    **/
+    public function create(Connection $con)
+    {
+        $platform = $con->getDatabasePlatform()
+            ->getName();
+        
+        $sql = $this->getCreateIndexSql($platform);
+        $st = $con->prepare($sql);
+        $result = $st->execute();
+        
+        return $result;
+    }
+    
+    /**
+     * sql fo index create
+     *
+     * @param string $platform
      *
      * @return string - sql
     **/
-    public function getCreateIndexSql()
+    public function getCreateIndexSql($platform)
     {
-        $sql = 'CREATE ';
-        if($this->getUnique())
-            $sql .= 'UNIQUE ';
-        $sql .= 'INDEX ' .  $this->getName() . ' ';
-        $sql .= 'ON ' . $this->getTableName() . ' ';
-        if($this->getUsing())
-            $sql .= 'USING ' . $this->getUsing() . ' ';
-        $sql .= '(';
-        
-        $columns = $this->getColumns();
-        $counter = 0;
-        foreach($columns as $col) {
-            $counter ++;
-            $sql .= $col;
-            if($counter != count($columns))
-                $sql .= ', ';
+        $sql = '';
+        switch($platform) {
+            case 'postgresql':
+                $sql = 'CREATE ';
+                if($this->getUnique())
+                    $sql .= 'UNIQUE ';
+                $sql .= 'INDEX ' .  $this->getName() . ' ';
+                $sql .= 'ON ' . $this->getTableName() . ' ';
+                if($this->getUsing())
+                    $sql .= 'USING ' . $this->getUsing() . ' ';
+                $sql .= '(';
+                
+                $columns = $this->getColumns();
+                $counter = 0;
+                foreach($columns as $col) {
+                    $counter ++;
+                    $sql .= $col;
+                    if($counter != count($columns))
+                        $sql .= ', ';
+                }
+                $sql .= ')';
+                break;
+            default:
+                throw new \LogicException("Platform {$platform} does not support");
         }
-        $sql .= ')';
         
         return $sql; 
     }
         
     /**
-     * Генерируем имя индекса автоматически
+     * generate index name
      *
      * @return string - index name
     **/

@@ -198,16 +198,14 @@ class IndexUpdateCommand extends Command
      * @param CustomIndex
     **/
     protected function dropIndex(Connection $connection, $indexId)
-    {
-        $sql = CustomIndex::getDropIndexSql($indexId);
-        
+    {   
         if($this->input->getOption(self::DUMPSQL)) {
+            $sql = CustomIndex::getDropIndexSql($connection->getDatabasePlatform()->getName(), $indexId);
             $this->output->writeln($sql);
             return;
         }
         
-        $st = $connection->prepare($sql);
-        $result = $st->execute();
+        $result = CustomIndex::drop($connection, $indexId);
     
         if($result)
             $this->output->writeln("<info>Index ". $indexId ." was droped</info>");
@@ -227,15 +225,15 @@ class IndexUpdateCommand extends Command
     {
         $errors = $this->validator->validate($index);
         if(!count($errors)) {
-            $sql = $index->getCreateIndexSql();
+
             
             if($this->input->getOption(self::DUMPSQL)) {
+                $sql = $index->getCreateIndexSql($connection->getDatabasePlatform()->getName());
                 $this->output->writeln($sql);
                 return;
             }
             
-            $st = $connection->prepare($sql);
-            $result = $st->execute();
+            $result = $index->create($connection);
 
             $this->output->writeln("<info>Index ". $index->getName() ." was created</info>");
             

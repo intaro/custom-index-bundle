@@ -1,6 +1,6 @@
 <?php
 
-namespace Intaro\CRMBundle\DependencyInjection;
+namespace Intaro\CustomIndexBundle\DependencyInjection;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
