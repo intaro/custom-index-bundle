@@ -4,7 +4,7 @@ namespace Intaro\CustomIndexBundle\DBAL\Schema;
 
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Component\Validator\ExecutionContext;
+use Symfony\Component\Validator\ExecutionContextInterface;
 
 use Doctrine\DBAL\Connection;
 
@@ -107,9 +107,9 @@ class CustomIndex
     /**
      * check columns field
      *
-     * @param ExecutionContext $context
+     * @param ExecutionContextInterface $context
     **/
-    public function isColumnsValid(ExecutionContext $context)
+    public function isColumnsValid(ExecutionContextInterface $context)
     {
         foreach($this->getColumns() as $col) {
             if(!is_string($col)) {

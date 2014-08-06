@@ -51,7 +51,7 @@ class IndexUpdateCommand extends Command
     
         $kernel             = $this->getApplication()->getKernel();
         $container          = $kernel->getContainer();
-        $em                 = $container->get('doctrine')->getEntityManager();
+        $em                 = $container->get('doctrine')->getManager();
         $this->validator    = $container->get('validator');
         $connection         = $em->getConnection();
 
