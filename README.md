@@ -80,6 +80,8 @@ Available CustomIndex attributes:
 * `unique` - unique index (default=false).
 * `using` - corresponds to `USING` directive in PostgreSQL `CREATE INDEX` command.
 
+Required only `columns` attribute.
+
 2) Use `intaro:doctrine:index:update` command for update db.
 
 ```
