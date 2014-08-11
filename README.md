@@ -101,7 +101,7 @@ Create index using `pg_trgm` extension:
 @CustomIndexAnnotation\CustomIndex(columns="lower(my_column) gist_trgm_ops", using="gist"})
 ```
 
-Create index using PostgreSql functions:
+Create unique index using PostgreSql functions:
 ```
-@CustomIndexAnnotation\CustomIndex(columns={"lower(my_column1)", "nullif(true, not my_column2 isnull)"} gist_trgm_ops", using="gist"}, unique=true)
+@CustomIndexAnnotation\CustomIndex(columns={"lower(my_column1)", "nullif(true, not my_column2 isnull)"}, unique=true)
 ```
