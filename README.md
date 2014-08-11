@@ -98,7 +98,7 @@ php app/console intaro:doctrine:index:update --dump-sql
 
 Create index using `pg_trgm` extension:
 ```
-@CustomIndexAnnotation\CustomIndex(columns="lower(my_column) gist_trgm_ops", using="gist"})
+@CustomIndexAnnotation\CustomIndex(columns="lower(my_column) gist_trgm_ops", using="gist")
 ```
 
 Create unique index using PostgreSql functions:
