@@ -16,20 +16,20 @@ use Intaro\CustomIndexBundle\DBAL\Schema\CustomIndex;
 
 class IndexUpdateCommand extends Command
 {
-    const CUSTOM_INDEXES_ANNOTATION 
+    const CUSTOM_INDEXES_ANNOTATION
         = 'Intaro\\CustomIndexBundle\\Annotations\\CustomIndexes';
 
     const DUMPSQL = 'dump-sql';
 
-    // array with abstract classes    
+    // array with abstract classes
     protected $abstractClasses = [];
 
     //InputInterface
     protected $input;
-    
+
     //OutputInterface
     protected $output;
-    
+
     /**
      * @see Command
      */
@@ -38,7 +38,7 @@ class IndexUpdateCommand extends Command
         $this
             ->setName('intaro:doctrine:index:update')
             ->addOption(self::DUMPSQL, null, InputOption::VALUE_NONE, 'Dump sql instead creating index')
-            ->setDescription('Update custom indexes.');
+            ->setDescription('Create new and drop not existing custom indexes');
     }
 
     /**
@@ -48,7 +48,7 @@ class IndexUpdateCommand extends Command
     {
         $this->input = $input;
         $this->output = $output;
-    
+
         $kernel             = $this->getApplication()->getKernel();
         $container          = $kernel->getContainer();
         $em                 = $container->get('doctrine')->getManager();
@@ -57,31 +57,32 @@ class IndexUpdateCommand extends Command
 
         $indexesInDb = $this->getCustomIndexesFromDb($connection);
         $indexesInModel = $this->getAllCustomIndexes($em);
-        
-        // удаляем лишние индексы
+
+        // Drop indexes
         $dropFlag = false;
-        foreach($indexesInDb as $indexId) {
-            if(!array_key_exists($indexId, $indexesInModel)) {
+        foreach ($indexesInDb as $indexId) {
+            if (!array_key_exists($indexId, $indexesInModel)) {
                 $this->dropIndex($connection, $indexId);
                 $dropFlag = true;
             }
         }
-        if(!$dropFlag)
-            $this->output->writeln("<info>No index was droped</info>");
-            
+        if (!$dropFlag) {
+            $this->output->writeln("<info>No index was dropped.</info>");
+        }
 
-        // добавляем недостающие индексы
+        // Create indexes
         $createFlag = false;
-        foreach($indexesInModel as $key => $index) {
-            if(!in_array($key, $indexesInDb)) {
+        foreach ($indexesInModel as $key => $index) {
+            if (!in_array($key, $indexesInDb)) {
                 $this->createIndex($connection, $index);
                 $createFlag = true;
             }
         }
-        if(!$createFlag)
+        if (!$createFlag) {
             $this->output->writeln("<info>No index was created</info>");
+        }
     }
-    
+
 
     /**
      * get custom indexes from all entities
@@ -94,66 +95,67 @@ class IndexUpdateCommand extends Command
     {
         $metadata = $em->getMetadataFactory()
             ->getAllMetadata();
-    
+
         $result = [];
-        
+
         $this->rememberAllAbstractWithIndex($metadata);
-              
+
         // add all custom indexes into $result array
         $indexesToResult = function(ClassMetadata $meta, $tableName, $tablePostfix = false) use (&$result) {
             if($indexes = $this->readEntityIndexes($meta)) {
                 foreach($indexes as $aIndex) {
                     $index = new CustomIndex(
-                        $tableName, 
-                        $aIndex->columns, 
-                        $aIndex->name . ($aIndex->name && $tablePostfix ? '_' . $tableName : ''), 
-                        $aIndex->unique, 
-                        $aIndex->using 
+                        $tableName,
+                        $aIndex->columns,
+                        $aIndex->name . ($aIndex->name && $tablePostfix ? '_' . $tableName : ''),
+                        $aIndex->unique,
+                        $aIndex->using,
+                        $aIndex->where
                     );
                     $result[$index->getName()] = $index;
                 }
             }
         };
-                
+
         // create index from non abstract entity annotation
-        foreach($metadata as $meta) {
-                
-            if(!$this->isAbstract($meta)) {
+        foreach ($metadata as $meta) {
+            if (!$this->isAbstract($meta)) {
                 $indexesToResult($meta, $meta->getTableName());
-                
+
                 // create index using abstract parent
                 $parentsMeta = $this->searchParentsWithIndex($meta);
-                foreach($parentsMeta as $parentMeta) {
+                foreach ($parentsMeta as $parentMeta) {
                     $indexesToResult($parentMeta, $meta->getTableName(), true);
                 }
             }
         }
-        
+
         return $result;
     }
-        
+
     /**
      * read entity annotation
      *
      * @param ClassMetadata $meta
      *
-     * @return 
+     * @return
     **/
     protected function readEntityIndexes(ClassMetadata $meta)
     {
-        if(!isset($this->reader))
+        if (!isset($this->reader)) {
             $this->reader = new \Doctrine\Common\Annotations\AnnotationReader();
-            
+        }
+
         $refl = $meta->getReflectionClass();
-        
+
 		$annotation = $this->reader->getClassAnnotation($refl, self::CUSTOM_INDEXES_ANNOTATION);
-		if($annotation) {
+		if ($annotation) {
     		return $annotation->indexes;
 		}
-		
+
 		return null;
     }
-        
+
     /**
      * Output validation error to console
      *
@@ -161,9 +163,9 @@ class IndexUpdateCommand extends Command
     **/
     protected function outputViolation(ConstraintViolation $v)
     {
-        $this->output->writeln("<error>". $v->getMessage() ."</error>");  
-    }    
-    
+        $this->output->writeln("<error>". $v->getMessage() ."</error>");
+    }
+
     /**
      * Get available db indexes
      *
@@ -174,23 +176,23 @@ class IndexUpdateCommand extends Command
     protected function getCustomIndexesFromDb(Connection $connection)
     {
         $result = [];
-        
+
         $st = $connection->prepare("
-            SELECT relname FROM pg_class 
+            SELECT relname FROM pg_class
             WHERE relkind = ?
             AND relname LIKE ?
         ");
         $st->execute(['i', CustomIndex::PREFIX . '%']);
-        
+
         if($data = $st->fetchAll()) {
             foreach($data as $row) {
                 $result[] = $row['relname'];
             }
         }
-        
+
         return $result;
     }
-    
+
     /**
      * drop index
      *
@@ -198,25 +200,26 @@ class IndexUpdateCommand extends Command
      * @param CustomIndex
     **/
     protected function dropIndex(Connection $connection, $indexId)
-    {   
-        if($this->input->getOption(self::DUMPSQL)) {
+    {
+        if ($this->input->getOption(self::DUMPSQL)) {
             $sql = CustomIndex::getDropIndexSql($connection->getDatabasePlatform()->getName(), $indexId);
             $this->output->writeln($sql);
             return;
         }
-        
+
         $result = CustomIndex::drop($connection, $indexId);
-    
-        if($result)
-            $this->output->writeln("<info>Index ". $indexId ." was droped</info>");
-        else
-            $this->output->writeln("<error>Index ". $indexId ." was not droped</error>");
+
+        if ($result) {
+            $this->output->writeln("<info>Index ". $indexId ." was dropped.</info>");
+        } else {
+            $this->output->writeln("<error>Index ". $indexId ." was not dropped.</error>");
+        }
 
         return $result;
     }
-    
+
     /**
-     * create index
+     * Create index
      *
      * @param Connection $connection
      * @param CustomIndex
@@ -224,47 +227,41 @@ class IndexUpdateCommand extends Command
     protected function createIndex(Connection $connection, CustomIndex $index)
     {
         $errors = $this->validator->validate($index);
-        if(!count($errors)) {
-
-            
-            if($this->input->getOption(self::DUMPSQL)) {
+        if (!count($errors)) {
+            if ($this->input->getOption(self::DUMPSQL)) {
                 $sql = $index->getCreateIndexSql($connection->getDatabasePlatform()->getName());
                 $this->output->writeln($sql);
                 return;
             }
-            
+
             $result = $index->create($connection);
 
-            $this->output->writeln("<info>Index ". $index->getName() ." was created</info>");
-            
+            $this->output->writeln("<info>Index ". $index->getName() ." was created.</info>");
+
             return $result;
         } else {
-            $this->output->writeln("<error>Index ". $index->getName() ." was not created</error>");                
-            foreach($errors as $error) {
+            $this->output->writeln("<error>Index ". $index->getName() ." was not created.</error>");
+
+            foreach ($errors as $error) {
                 $this->outputViolation($error);
             }
-        } 
-        
+        }
+
         return false;
     }
-    
+
     /**
      * Check is abstract class and collect abstract classes
      *
      * @param ClassMetadata $meta
      *
-     * @return bool - true if abstract, false otherwise 
+     * @return bool - true if abstract, false otherwise
     **/
     protected function isAbstract(ClassMetadata $meta)
     {
-        $refl = $meta->getReflectionClass();
-        if($refl->isAbstract()) {
-            return true;
-        }
-        
-        return false;
+        return $meta->getReflectionClass()->isAbstract();
     }
-    
+
     /**
      * get array with names of abstract entity with custom index annotation
      *
@@ -274,7 +271,7 @@ class IndexUpdateCommand extends Command
     {
         return $this->abstractClasses;
     }
-    
+
     /**
      * search and remember abstract entity with custom index annotation
      *
@@ -282,15 +279,15 @@ class IndexUpdateCommand extends Command
     **/
     protected function rememberAllAbstractWithIndex($metadata)
     {
-        foreach($metadata as $meta) {
-            if($this->isAbstract($meta)) {
+        foreach ($metadata as $meta) {
+            if ($this->isAbstract($meta)) {
                 $this->abstractClasses[$meta->getName()] = $meta;
             }
-        }       
+        }
     }
-    
+
     /**
-     * get array with parent entity meta if parent has custom index annotation 
+     * get array with parent entity meta if parent has custom index annotation
      *
      * @param ClassMetadata $meta
      *
@@ -300,12 +297,12 @@ class IndexUpdateCommand extends Command
     {
         $refl = $meta->getReflectionClass();
         $parentMeta = [];
-        foreach($this->getAbstract() as $entityName => $entityMeta) {
-            if($refl->isSubclassOf($entityName)) {
+        foreach ($this->getAbstract() as $entityName => $entityMeta) {
+            if ($refl->isSubclassOf($entityName)) {
                 $parentMeta[$entityName] = $entityMeta;
             }
         }
-        
+
         return $parentMeta;
     }
 }

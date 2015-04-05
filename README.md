@@ -75,10 +75,11 @@ class MyEntity
 
 Available CustomIndex attributes:
 
-* `columns` - string or array with columns.
-* `name` - index name (default='i_cindex_<md5 hash from all CustomIndex attributes>').
-* `unique` - unique index (default=false).
+* `columns` - array of the table columns
+* `name` - index name (default = `'i_cindex_<md5 hash from all CustomIndex attributes>'`).
+* `unique` - index is unique (default = false).
 * `using` - corresponds to `USING` directive in PostgreSQL `CREATE INDEX` command.
+* `where` - corresponds to `WHERE` directive in PostgreSQL `CREATE INDEX` command.
 
 Required only `columns` attribute.
 
@@ -101,7 +102,12 @@ Create index using `pg_trgm` extension:
 @CustomIndexAnnotation\CustomIndex(columns="lower(my_column) gist_trgm_ops", using="gist")
 ```
 
-Create unique index using PostgreSql functions:
+Create unique index using PostgreSQL functions:
 ```
 @CustomIndexAnnotation\CustomIndex(columns={"lower(my_column1)", "nullif(true, not my_column2 isnull)"}, unique=true)
+```
+
+Create partial index:
+```
+@CustomIndexAnnotation\CustomIndex(columns={"site_id"}, where="product_id IS NULL")
 ```
