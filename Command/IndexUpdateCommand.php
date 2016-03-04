@@ -101,18 +101,19 @@ class IndexUpdateCommand extends Command
         $this->rememberAllAbstractWithIndex($metadata);
 
         // add all custom indexes into $result array
-        $indexesToResult = function(ClassMetadata $meta, $tableName, $tablePostfix = false) use (&$result) {
-            if($indexes = $this->readEntityIndexes($meta)) {
-                foreach($indexes as $aIndex) {
+        $indexesToResult = function (ClassMetadata $meta, $tableName, $tablePostfix = false) use (&$result) {
+            if ($indexes = $this->readEntityIndexes($meta)) {
+                foreach ($indexes as $aIndex) {
                     $index = new CustomIndex(
                         $tableName,
                         $aIndex->columns,
                         $aIndex->name . ($aIndex->name && $tablePostfix ? '_' . $tableName : ''),
                         $aIndex->unique,
                         $aIndex->using,
-                        $aIndex->where
+                        $aIndex->where,
+                        $meta->getSchemaName()
                     );
-                    $result[$index->getName()] = $index;
+                    $result[$index->getName(true)] = $index;
                 }
             }
         };
@@ -148,12 +149,12 @@ class IndexUpdateCommand extends Command
 
         $refl = $meta->getReflectionClass();
 
-		$annotation = $this->reader->getClassAnnotation($refl, self::CUSTOM_INDEXES_ANNOTATION);
-		if ($annotation) {
-    		return $annotation->indexes;
-		}
+        $annotation = $this->reader->getClassAnnotation($refl, self::CUSTOM_INDEXES_ANNOTATION);
+        if ($annotation) {
+            return $annotation->indexes;
+        }
 
-		return null;
+        return null;
     }
 
     /**
@@ -178,14 +179,13 @@ class IndexUpdateCommand extends Command
         $result = [];
 
         $st = $connection->prepare("
-            SELECT relname FROM pg_class
-            WHERE relkind = ?
-            AND relname LIKE ?
+            SELECT schemaname || '.' || indexname as relname FROM pg_indexes
+            WHERE indexname LIKE ?
         ");
-        $st->execute(['i', CustomIndex::PREFIX . '%']);
+        $st->execute([CustomIndex::PREFIX . '%']);
 
-        if($data = $st->fetchAll()) {
-            foreach($data as $row) {
+        if ($data = $st->fetchAll()) {
+            foreach ($data as $row) {
                 $result[] = $row['relname'];
             }
         }
