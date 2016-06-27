@@ -26,6 +26,8 @@ class CustomIndex
 
     protected $tableName;
 
+    protected $schema;
+
     /**
      * validation
      *
@@ -104,10 +106,17 @@ class CustomIndex
         return $sql;
     }
 
-    public function __construct($tableName, $columns, $name = null, $unique = false, $using = null, $where = null)
-    {
-        $vars = ['tableName', 'columns', 'unique', 'using', 'where'];
-        foreach($vars as $var) {
+    public function __construct(
+        $tableName,
+        $columns,
+        $name = null,
+        $unique = false,
+        $using = null,
+        $where = null,
+        $schema = null
+    ) {
+        $vars = ['tableName', 'columns', 'unique', 'using', 'where', 'schema'];
+        foreach ($vars as $var) {
             $method = 'set' . ucfirst($var);
             $this->$method($$var);
         }
@@ -185,7 +194,7 @@ class CustomIndex
         $columns = $this->getColumns();
         $strToMd5 = $this->getTableName();
 
-        foreach($columns as $column) {
+        foreach ($columns as $column) {
             $strToMd5 .= $column;
         }
 
@@ -201,14 +210,30 @@ class CustomIndex
 
     public function setTableName($tableName)
     {
-    	$this->tableName = $tableName;
+        $this->tableName = $tableName;
 
-    	return $this;
+        return $this;
     }
 
     public function getTableName()
     {
-    	return $this->tableName;
+        if (!empty($this->getSchema())) {
+            return $this->getSchema() . '.' . $this->tableName;
+        } else {
+            return $this->tableName;
+        }
+    }
+
+    public function setSchema($schema)
+    {
+        $this->schema = $schema;
+
+        return $this;
+    }
+
+    public function getSchema()
+    {
+        return $this->schema;
     }
 
     public function setName($name)
@@ -217,14 +242,22 @@ class CustomIndex
             $name = self::PREFIX . $name;
         }
 
-    	$this->name = $name;
+        $this->name = $name;
 
-    	return $this;
+        return $this;
     }
 
-    public function getName()
+    public function getName($full = false)
     {
-    	return $this->name;
+        if (!$full) {
+            return $this->name;
+        }
+
+        if (!empty($this->getSchema())) {
+            return $this->getSchema() . '.' . $this->name;
+        } else {
+            return 'public.' . $this->name;
+        }
     }
 
     public function setColumns($columns)
@@ -240,47 +273,47 @@ class CustomIndex
             }
         }
 
-    	return $this;
+        return $this;
     }
 
     public function getColumns()
     {
-    	return $this->columns;
+        return $this->columns;
     }
 
     public function setUnique($unique)
     {
-    	$this->unique = (bool) $unique;
+        $this->unique = (bool) $unique;
 
-    	return $this;
+        return $this;
     }
 
     public function getUnique()
     {
-    	return $this->unique;
+        return $this->unique;
     }
 
     public function setUsing($using)
     {
-    	$this->using = $using;
+        $this->using = $using;
 
-    	return $this;
+        return $this;
     }
 
     public function getUsing()
     {
-    	return $this->using;
+        return $this->using;
     }
 
     public function setWhere($where)
     {
-    	$this->where = (string) $where;
+        $this->where = (string) $where;
 
-    	return $this;
+        return $this;
     }
 
     public function getWhere()
     {
-    	return $this->where;
+        return $this->where;
     }
 }
