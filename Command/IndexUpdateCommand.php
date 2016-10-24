@@ -203,7 +203,7 @@ class IndexUpdateCommand extends Command
     {
         if ($this->input->getOption(self::DUMPSQL)) {
             $sql = CustomIndex::getDropIndexSql($connection->getDatabasePlatform()->getName(), $indexId);
-            $this->output->writeln($sql);
+            $this->output->writeln($sql.';');
             return;
         }
 
@@ -230,7 +230,7 @@ class IndexUpdateCommand extends Command
         if (!count($errors)) {
             if ($this->input->getOption(self::DUMPSQL)) {
                 $sql = $index->getCreateIndexSql($connection->getDatabasePlatform()->getName());
-                $this->output->writeln($sql);
+                $this->output->writeln($sql.';');
                 return;
             }
 
