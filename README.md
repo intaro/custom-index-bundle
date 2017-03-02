@@ -39,6 +39,18 @@ public function registerBundles()
 }
 ```
 
+If your project have many schemas in single database and command must generate custom indexes only for one schema then add in your `config.yml`:
+
+```yaml
+intaro_custom_index:
+    search_in_all_schemas: false
+
+```
+
+Default value of `search_in_all_schemas` is `true`.
+If you have different entities in different schemas and you need to update custom indexes in all schemas at once then you must set `search_in_all_schemas` to `true` or omit this config.
+If you have database with only public schema then `search_in_all_schemas` value doesn't matter.
+
 ## Usage
 
 1) Add annotation in your entity

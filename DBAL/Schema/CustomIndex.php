@@ -8,11 +8,15 @@ use Doctrine\DBAL\Connection;
 
 class CustomIndex
 {
+    const PLATFROM_POSTGRESQL = 'postgresql';
+
     const PREFIX = 'i_cindex_';
 
     const UNIQUE = 'unique';
 
     protected static $availableUsingMethods = ['btree', 'hash', 'gin', 'gist'];
+
+    protected static $currentSchema;
 
     protected $name;
 
@@ -32,7 +36,7 @@ class CustomIndex
      * validation
      *
      * @param ClassMetadata
-    **/
+     **/
     public static function loadValidatorMetadata(ClassMetadata $metadata)
     {
         $metadata->addPropertyConstraint('tableName', new Assert\NotBlank());
@@ -73,7 +77,7 @@ class CustomIndex
      * @param Connection $con
      *
      * @return bool
-    **/
+     **/
     public static function drop(Connection $con, $indexId)
     {
         $platform = $con->getDatabasePlatform()
@@ -92,18 +96,115 @@ class CustomIndex
      * @param $indexName - index name in db
      *
      * @return string - sql
-    **/
+     **/
     public static function getDropIndexSql($platform, $indexName)
     {
         $sql = '';
         switch($platform) {
-            case 'postgresql':
+            case self::PLATFROM_POSTGRESQL:
                 $sql = 'DROP INDEX ' . $indexName;
                 break;
             default:
-                throw new \LogicException("Platform {$platform} does not support");
+                self::unsupportedPlatform($platform);
         }
         return $sql;
+    }
+
+    /**
+     * Get default schema name and store it in static property
+     *
+     * @param Connection $con
+     * @return string
+     */
+    public static function getCurrentSchema(Connection $con)
+    {
+        if (!isset(self::$currentSchema)) {
+            $platform = $con->getDatabasePlatform()
+                ->getName();
+
+            $sql = self::getCurrentSchemaSql($platform);
+            $st = $con->prepare($sql);
+            $st->execute();
+            $result = $st->fetch();
+
+            self::$currentSchema = isset($result['current_schema']) ?
+                $result['current_schema'] : null;
+        }
+
+        return self::$currentSchema;
+    }
+
+    /**
+     * sql for select current schema
+     *
+     * @param $platform
+     *
+     * @return string - sql
+     **/
+    public static function getCurrentSchemaSql($platform)
+    {
+        $sql = '';
+        switch($platform) {
+            case self::PLATFROM_POSTGRESQL:
+                $sql = 'SELECT current_schema()';
+                break;
+            default:
+                self::unsupportedPlatform($platform);
+        }
+
+        return $sql;
+    }
+
+
+    public static function getCurrentIndex(Connection $con, $searchInAllSchemas)
+    {
+        $platform = $con->getDatabasePlatform()
+            ->getName();
+
+        $sql = self::getCurrentIndexSql($platform, $searchInAllSchemas);
+        $st = $con->prepare($sql);
+        $st->execute([self::PREFIX . '%']);
+
+        $result = [];
+        if ($data = $st->fetchAll()) {
+            foreach ($data as $row) {
+                $result[] = $row['relname'];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Return sql for select current index
+     *
+     * @param $platform
+     * @param $searchInAllSchemas
+     * @return string
+     */
+    public static function getCurrentIndexSql($platform, $searchInAllSchemas)
+    {
+        switch($platform) {
+            case self::PLATFROM_POSTGRESQL:
+                $sql = "
+                    SELECT schemaname || '.' || indexname as relname FROM pg_indexes
+                    WHERE indexname LIKE ?
+                ";
+                if (!$searchInAllSchemas) {
+                    $sql .= " AND schemaname = current_schema()";
+                }
+                break;
+            default:
+                self::unsupportedPlatform($platform);
+
+        }
+
+        return $sql;
+    }
+
+    public static function unsupportedPlatform($platform)
+    {
+        throw new \LogicException("Platform {$platform} does not support");
     }
 
     public function __construct(
@@ -115,7 +216,14 @@ class CustomIndex
         $where = null,
         $schema = null
     ) {
-        $vars = ['tableName', 'columns', 'unique', 'using', 'where', 'schema'];
+        $vars = [
+            'tableName',
+            'columns',
+            'unique',
+            'using',
+            'where',
+            'schema'
+        ];
         foreach ($vars as $var) {
             $method = 'set' . ucfirst($var);
             $this->$method($$var);
@@ -134,7 +242,7 @@ class CustomIndex
      * @param Connection $con
      *
      * @return bool
-    **/
+     **/
     public function create(Connection $con)
     {
         $platform = $con->getDatabasePlatform()
@@ -153,12 +261,12 @@ class CustomIndex
      * @param string $platform
      *
      * @return string - sql
-    **/
+     **/
     public function getCreateIndexSql($platform)
     {
         $sql = '';
         switch($platform) {
-            case 'postgresql':
+            case self::PLATFROM_POSTGRESQL:
                 $sql = 'CREATE ';
                 if ($this->getUnique()) {
                     $sql .= 'UNIQUE ';
@@ -178,7 +286,7 @@ class CustomIndex
                 }
                 break;
             default:
-                throw new \LogicException("Platform {$platform} does not support");
+                self::unsupportedPlatform($platform);
         }
 
         return $sql;
@@ -188,7 +296,7 @@ class CustomIndex
      * generate index name
      *
      * @return string - index name
-    **/
+     **/
     public function generateName()
     {
         $columns = $this->getColumns();
@@ -217,7 +325,10 @@ class CustomIndex
 
     public function getTableName()
     {
-        if (!empty($this->getSchema())) {
+        if (
+            !empty($this->getSchema())
+            && $this->getSchema() != self::$currentSchema
+        ) {
             return $this->getSchema() . '.' . $this->tableName;
         } else {
             return $this->tableName;
@@ -249,15 +360,7 @@ class CustomIndex
 
     public function getName($full = false)
     {
-        if (!$full) {
-            return $this->name;
-        }
-
-        if (!empty($this->getSchema())) {
-            return $this->getSchema() . '.' . $this->name;
-        } else {
-            return 'public.' . $this->name;
-        }
+        return $this->name;
     }
 
     public function setColumns($columns)

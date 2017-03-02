@@ -49,8 +49,7 @@ class IndexUpdateCommand extends Command
         $this->input = $input;
         $this->output = $output;
 
-        $kernel             = $this->getApplication()->getKernel();
-        $container          = $kernel->getContainer();
+        $container          = $this->getContainer();
         $em                 = $container->get('doctrine')->getManager();
         $this->validator    = $container->get('validator');
         $connection         = $em->getConnection();
@@ -90,20 +89,38 @@ class IndexUpdateCommand extends Command
      * @param EntityManager $em
      *
      * @return array - array with custom indexes
-    **/
+     */
     protected function getAllCustomIndexes(EntityManager $em)
     {
+        $connection = $em->getConnection();
         $metadata = $em->getMetadataFactory()
             ->getAllMetadata();
+        $searchInAllSchemas = $this->isSearchInAllSchemas();
+        $currentSchema = CustomIndex::getCurrentSchema($connection);
 
         $result = [];
 
         $this->rememberAllAbstractWithIndex($metadata);
 
         // add all custom indexes into $result array
-        $indexesToResult = function (ClassMetadata $meta, $tableName, $tablePostfix = false) use (&$result) {
+        $indexesToResult = function (
+            ClassMetadata $meta,
+            $tableName,
+            $tablePostfix = false
+        ) use (
+            &$result,
+            $searchInAllSchemas,
+            $currentSchema
+        ) {
             if ($indexes = $this->readEntityIndexes($meta)) {
                 foreach ($indexes as $aIndex) {
+                    $schema = $meta->getSchemaName() ?: $currentSchema;
+
+                    // skip index from side schema in single schema mode
+                    if (!$searchInAllSchemas && $schema != $currentSchema) {
+                        continue;
+                    }
+
                     $index = new CustomIndex(
                         $tableName,
                         $aIndex->columns,
@@ -111,9 +128,11 @@ class IndexUpdateCommand extends Command
                         $aIndex->unique,
                         $aIndex->using,
                         $aIndex->where,
-                        $meta->getSchemaName()
+                        $schema
                     );
-                    $result[$index->getName(true)] = $index;
+
+                    $key = $schema.'.'.$index->getName();
+                    $result[$key] = $index;
                 }
             }
         };
@@ -121,12 +140,19 @@ class IndexUpdateCommand extends Command
         // create index from non abstract entity annotation
         foreach ($metadata as $meta) {
             if (!$this->isAbstract($meta)) {
-                $indexesToResult($meta, $meta->getTableName());
+                $indexesToResult(
+                    $meta,
+                    $meta->getTableName()
+                );
 
                 // create index using abstract parent
                 $parentsMeta = $this->searchParentsWithIndex($meta);
                 foreach ($parentsMeta as $parentMeta) {
-                    $indexesToResult($parentMeta, $meta->getTableName(), true);
+                    $indexesToResult(
+                        $parentMeta,
+                        $meta->getTableName(),
+                        true
+                    );
                 }
             }
         }
@@ -140,7 +166,7 @@ class IndexUpdateCommand extends Command
      * @param ClassMetadata $meta
      *
      * @return
-    **/
+     **/
     protected function readEntityIndexes(ClassMetadata $meta)
     {
         if (!isset($this->reader)) {
@@ -161,7 +187,7 @@ class IndexUpdateCommand extends Command
      * Output validation error to console
      *
      * @param Exception $e
-    **/
+     **/
     protected function outputViolation(ConstraintViolation $v)
     {
         $this->output->writeln("<error>". $v->getMessage() ."</error>");
@@ -173,24 +199,13 @@ class IndexUpdateCommand extends Command
      * @param Connection $connection
      *
      * @return array - массив имен индексов
-    **/
+     **/
     protected function getCustomIndexesFromDb(Connection $connection)
     {
-        $result = [];
-
-        $st = $connection->prepare("
-            SELECT schemaname || '.' || indexname as relname FROM pg_indexes
-            WHERE indexname LIKE ?
-        ");
-        $st->execute([CustomIndex::PREFIX . '%']);
-
-        if ($data = $st->fetchAll()) {
-            foreach ($data as $row) {
-                $result[] = $row['relname'];
-            }
-        }
-
-        return $result;
+        return CustomIndex::getCurrentIndex(
+            $connection,
+            $this->isSearchInAllSchemas()
+        );
     }
 
     /**
@@ -198,7 +213,7 @@ class IndexUpdateCommand extends Command
      *
      * @param Connection $connection
      * @param CustomIndex
-    **/
+     **/
     protected function dropIndex(Connection $connection, $indexId)
     {
         if ($this->input->getOption(self::DUMPSQL)) {
@@ -223,7 +238,7 @@ class IndexUpdateCommand extends Command
      *
      * @param Connection $connection
      * @param CustomIndex
-    **/
+     **/
     protected function createIndex(Connection $connection, CustomIndex $index)
     {
         $errors = $this->validator->validate($index);
@@ -256,7 +271,7 @@ class IndexUpdateCommand extends Command
      * @param ClassMetadata $meta
      *
      * @return bool - true if abstract, false otherwise
-    **/
+     **/
     protected function isAbstract(ClassMetadata $meta)
     {
         return $meta->getReflectionClass()->isAbstract();
@@ -266,7 +281,7 @@ class IndexUpdateCommand extends Command
      * get array with names of abstract entity with custom index annotation
      *
      * @return bool
-    **/
+     **/
     protected function getAbstract()
     {
         return $this->abstractClasses;
@@ -276,7 +291,7 @@ class IndexUpdateCommand extends Command
      * search and remember abstract entity with custom index annotation
      *
      * @param array $metadata
-    **/
+     **/
     protected function rememberAllAbstractWithIndex($metadata)
     {
         foreach ($metadata as $meta) {
@@ -292,7 +307,7 @@ class IndexUpdateCommand extends Command
      * @param ClassMetadata $meta
      *
      * @return array
-    **/
+     **/
     protected function searchParentsWithIndex(ClassMetadata $meta)
     {
         $refl = $meta->getReflectionClass();
@@ -304,5 +319,26 @@ class IndexUpdateCommand extends Command
         }
 
         return $parentMeta;
+    }
+
+    /**
+     * Get container
+     *
+     * @return CotainerInterface
+     */
+    protected function getContainer()
+    {
+        return $this->getApplication()
+            ->getKernel()
+            ->getContainer();
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isSearchInAllSchemas()
+    {
+         return $this->getContainer()
+            ->getParameter('intaro.custom_index.search_in_all_schemas');
     }
 }

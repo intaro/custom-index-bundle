@@ -15,9 +15,15 @@ class Configuration implements ConfigurationInterface
     {
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('intaro_custom_index');
-        // Here you should define the parameters that are allowed to
-        // configure your bundle. See the documentation linked above for
-        // more information on that topic.
+
+        $rootNode
+            ->children()
+                // if true update indexes in all db schemas
+                // else update only in current schema
+                ->booleanNode('search_in_all_schemas')
+                    ->defaultTrue()
+                ->end()
+            ->end();
 
         return $treeBuilder;
     }

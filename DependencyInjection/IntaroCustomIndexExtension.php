@@ -21,5 +21,10 @@ class IntaroCustomIndexExtension extends Extension
     {
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
+
+        $container->setParameter(
+            'intaro.custom_index.search_in_all_schemas',
+            $config['search_in_all_schemas']
+        );
     }
 }
