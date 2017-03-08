@@ -358,7 +358,7 @@ class CustomIndex
         return $this;
     }
 
-    public function getName($full = false)
+    public function getName()
     {
         return $this->name;
     }

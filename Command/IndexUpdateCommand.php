@@ -61,7 +61,7 @@ class IndexUpdateCommand extends Command
         $dropFlag = false;
         foreach ($indexesInDb as $indexId) {
             if (!array_key_exists($indexId, $indexesInModel)) {
-                $this->dropIndex($connection, $indexId);
+                $this->dropIndex($connection, $this->quoteSchema($indexId));
                 $dropFlag = true;
             }
         }
@@ -338,7 +338,14 @@ class IndexUpdateCommand extends Command
      */
     protected function isSearchInAllSchemas()
     {
-         return $this->getContainer()
+        return $this->getContainer()
             ->getParameter('intaro.custom_index.search_in_all_schemas');
+    }
+
+    protected function quoteSchema($name)
+    {
+        $parts = explode('.', $name);
+        $parts[0] = '"'.$parts[0].'"';
+        return implode('.', $parts);
     }
 }
