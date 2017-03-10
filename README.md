@@ -11,7 +11,7 @@ Require the bundle in your `composer.json` file:
  ````json
 {
     "require": {
-        "intaro/custom-index-bundle": "~0.1.1",
+        "intaro/custom-index-bundle": "~0.2.2",
     }
 }
 ```
