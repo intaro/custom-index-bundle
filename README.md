@@ -8,7 +8,7 @@ CustomIndexBundle requires Symfony 2.1 or higher. Now work only with PostgreSQL.
 
 Require the bundle in your `composer.json` file:
 
- ````json
+ ```json
 {
     "require": {
         "intaro/custom-index-bundle": "~0.2.2",
