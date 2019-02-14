@@ -6,20 +6,9 @@ The CustomIndexBundle allows create index for doctrine entities using annotation
 
 CustomIndexBundle requires Symfony 2.1 or higher. Now work only with PostgreSQL.
 
-Require the bundle in your `composer.json` file:
-
- ```json
-{
-    "require": {
-        "intaro/custom-index-bundle": "~0.2.2",
-    }
-}
+Run into your project directory:
 ```
-
-Install the bundle:
-
-```
-$ composer update intaro/custom-index-bundle
+$ composer require intaro/custom-index-bundle
 ```
 
 Register the bundle in `AppKernel`:
