@@ -8,7 +8,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Validator\ConstraintViolation;
 
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\DBAL\Connection;
 
@@ -86,11 +86,11 @@ class IndexUpdateCommand extends Command
     /**
      * get custom indexes from all entities
      *
-     * @param EntityManager $em
+     * @param EntityManagerInterface $em
      *
      * @return array - array with custom indexes
      */
-    protected function getAllCustomIndexes(EntityManager $em)
+    protected function getAllCustomIndexes(EntityManagerInterface $em)
     {
         $connection = $em->getConnection();
         $metadata = $em->getMetadataFactory()
