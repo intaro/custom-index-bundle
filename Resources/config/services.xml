@@ -5,7 +5,7 @@
         http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
-        <service id="intaro_custom_index.command.index_update_command" class="\Intaro\CustomIndexBundle\Command\IndexUpdateCommand">
+        <service id="intaro_custom_index.command.index_update_command" class="Intaro\CustomIndexBundle\Command\IndexUpdateCommand">
             <tag name="console.command" command="intaro:doctrine:index:update" />
         </service>
     </services>
