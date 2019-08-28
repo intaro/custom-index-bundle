@@ -8,6 +8,8 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 class Configuration implements ConfigurationInterface
 {
+    protected static $availableIndexTypes = ['btree', 'hash', 'gin', 'gist'];
+
     /**
      * {@inheritDoc}
      */
@@ -22,6 +24,16 @@ class Configuration implements ConfigurationInterface
                 // else update only in current schema
                 ->booleanNode('search_in_all_schemas')
                     ->defaultTrue()
+                ->end()
+                ->arrayNode('allowed_index_types')
+                    ->prototype('scalar')
+                        ->validate()
+                            ->ifNotInArray(self::$availableIndexTypes)
+                            ->thenInvalid("Unknown index type. Allowed types: ".implode(', ', self::$availableIndexTypes).".")
+                        ->end()
+                    ->end()
+                    ->cannotBeEmpty()
+                    ->defaultValue(self::$availableIndexTypes)
                 ->end()
             ->end();
 
