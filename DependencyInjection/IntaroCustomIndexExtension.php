@@ -30,5 +30,9 @@ class IntaroCustomIndexExtension extends Extension
             'intaro.custom_index.search_in_all_schemas',
             $config['search_in_all_schemas']
         );
+        $container->setParameter(
+            'intaro.custom.index.allowed_index_types',
+            $config['allowed_index_types']
+        );
     }
 }
