@@ -2,6 +2,7 @@
 
 namespace Intaro\CustomIndexBundle\DBAL\Schema;
 
+use Intaro\CustomIndexBundle\Validator\Constraints\AllowedIndexType;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Symfony\Component\Validator\Constraints as Assert;
 use Doctrine\DBAL\Connection;
@@ -13,8 +14,6 @@ class CustomIndex
     const PREFIX = 'i_cindex_';
 
     const UNIQUE = 'unique';
-
-    protected static $availableUsingMethods = ['btree', 'hash', 'gin', 'gist'];
 
     protected static $currentSchema;
 
@@ -52,9 +51,7 @@ class CustomIndex
             'max'           => 63,
             'maxMessage'    => 'Name is too long',
         ]));
-        $metadata->addPropertyConstraint('using', new Assert\Choice([
-            'choices'       => self::$availableUsingMethods,
-        ]));
+        $metadata->addPropertyConstraint('using', new AllowedIndexType());
         $metadata->addPropertyConstraint('columns', new Assert\Count([
             'min'           => 1,
             'minMessage'    => "You must specify at least one column",

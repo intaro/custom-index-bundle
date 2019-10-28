@@ -6,20 +6,9 @@ The CustomIndexBundle allows create index for doctrine entities using annotation
 
 CustomIndexBundle requires Symfony 2.1 or higher. Now work only with PostgreSQL.
 
-Require the bundle in your `composer.json` file:
-
- ```json
-{
-    "require": {
-        "intaro/custom-index-bundle": "~0.2.2",
-    }
-}
+Run into your project directory:
 ```
-
-Install the bundle:
-
-```
-$ composer update intaro/custom-index-bundle
+$ composer require intaro/custom-index-bundle
 ```
 
 Register the bundle in `AppKernel`:
@@ -44,12 +33,16 @@ If your project have many schemas in single database and command must generate c
 ```yaml
 intaro_custom_index:
     search_in_all_schemas: false
+    allowed_index_types: ['gin', 'gist', 'btree', 'hash']
 
 ```
 
 Default value of `search_in_all_schemas` is `true`.
 If you have different entities in different schemas and you need to update custom indexes in all schemas at once then you must set `search_in_all_schemas` to `true` or omit this config.
 If you have database with only public schema then `search_in_all_schemas` value doesn't matter.
+
+Parameter `allowed_index_types` helps to exclude some types of indexes. If someone will try to use excluded type, command `intaro:doctrine:index:update` will return an error.  
+Default value is `['gin', 'gist', 'btree', 'hash']`.
 
 ## Usage
 
