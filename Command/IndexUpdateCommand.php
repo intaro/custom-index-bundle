@@ -80,6 +80,8 @@ class IndexUpdateCommand extends Command
         if (!$createFlag) {
             $this->output->writeln("<info>No index was created</info>");
         }
+
+        return 0;
     }
 
 
