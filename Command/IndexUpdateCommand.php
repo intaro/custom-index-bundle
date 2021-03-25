@@ -150,9 +150,15 @@ class IndexUpdateCommand extends Command
                 // create index using abstract parent
                 $parentsMeta = $this->searchParentsWithIndex($meta);
                 foreach ($parentsMeta as $parentMeta) {
+                    if ($meta->inheritanceType === ClassMetadata::INHERITANCE_TYPE_JOINED) {
+                        $tableName = $parentMeta->getTableName();
+                    } else {
+                        $tableName = $meta->getTableName();
+                    }
+
                     $indexesToResult(
                         $parentMeta,
-                        $meta->getTableName(),
+                        $tableName,
                         true
                     );
                 }
