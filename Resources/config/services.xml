@@ -6,6 +6,7 @@
 
     <services>
         <service id="intaro_custom_index.command.index_update_command" class="Intaro\CustomIndexBundle\Command\IndexUpdateCommand">
+            <argument type="service" id="validator" />
             <tag name="console.command" command="intaro:doctrine:index:update" />
         </service>
 
