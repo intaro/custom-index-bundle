@@ -13,6 +13,7 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\DBAL\Connection;
 
 use Intaro\CustomIndexBundle\DBAL\Schema\CustomIndex;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class IndexUpdateCommand extends Command
 {
@@ -29,6 +30,16 @@ class IndexUpdateCommand extends Command
 
     //OutputInterface
     protected $output;
+
+    /** @var ValidatorInterface */
+    protected $validator;
+
+    public function __construct(ValidatorInterface $validator)
+    {
+        parent::__construct();
+
+        $this->validator = $validator;
+    }
 
     /**
      * @see Command
@@ -51,7 +62,6 @@ class IndexUpdateCommand extends Command
 
         $container          = $this->getContainer();
         $em                 = $container->get('doctrine')->getManager();
-        $this->validator    = $container->get('validator');
         $connection         = $em->getConnection();
 
         $indexesInDb = $this->getCustomIndexesFromDb($connection);
