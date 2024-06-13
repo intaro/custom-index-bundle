@@ -13,7 +13,7 @@ class Configuration implements ConfigurationInterface
     /**
      * {@inheritDoc}
      */
-    public function getConfigTreeBuilder()
+    public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('intaro_custom_index');
         $rootNode = \method_exists($treeBuilder, 'getRootNode')
