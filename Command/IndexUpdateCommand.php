@@ -1,8 +1,9 @@
 <?php
 namespace Intaro\CustomIndexBundle\Command;
 
+use Intaro\CustomIndexBundle\Annotations\CustomIndexes;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -15,12 +16,10 @@ use Doctrine\DBAL\Connection;
 use Intaro\CustomIndexBundle\DBAL\Schema\CustomIndex;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+#[AsCommand('intaro:doctrine:index:update', 'Create new and drop not existing custom indexes')]
 class IndexUpdateCommand extends Command
 {
-    const CUSTOM_INDEXES_ANNOTATION
-        = 'Intaro\\CustomIndexBundle\\Annotations\\CustomIndexes';
-
-    const DUMPSQL = 'dump-sql';
+    private const DUMP_SQL_OPTION = 'dump-sql';
 
     // array with abstract classes
     protected $abstractClasses = [];
@@ -31,25 +30,17 @@ class IndexUpdateCommand extends Command
     //OutputInterface
     protected $output;
 
-    /** @var ValidatorInterface */
-    protected $validator;
-
-    public function __construct(ValidatorInterface $validator)
-    {
+    public function __construct(
+        private readonly ValidatorInterface $validator,
+        private readonly EntityManagerInterface $em,
+        private readonly bool $searchInAllSchemas
+    ) {
         parent::__construct();
-
-        $this->validator = $validator;
     }
 
-    /**
-     * @see Command
-     */
-    protected function configure()
+    protected function configure(): void
     {
-        $this
-            ->setName('intaro:doctrine:index:update')
-            ->addOption(self::DUMPSQL, null, InputOption::VALUE_NONE, 'Dump sql instead creating index')
-            ->setDescription('Create new and drop not existing custom indexes');
+        $this->addOption(self::DUMP_SQL_OPTION, null, InputOption::VALUE_NONE, 'Dump sql instead creating index');
     }
 
     /**
@@ -59,13 +50,10 @@ class IndexUpdateCommand extends Command
     {
         $this->input = $input;
         $this->output = $output;
-
-        $container          = $this->getContainer();
-        $em                 = $container->get('doctrine')->getManager();
-        $connection         = $em->getConnection();
+        $connection = $this->em->getConnection();
 
         $indexesInDb = $this->getCustomIndexesFromDb($connection);
-        $indexesInModel = $this->getAllCustomIndexes($em);
+        $indexesInModel = $this->getAllCustomIndexes();
 
         // Drop indexes
         $dropFlag = false;
@@ -96,18 +84,12 @@ class IndexUpdateCommand extends Command
 
 
     /**
-     * get custom indexes from all entities
-     *
-     * @param EntityManagerInterface $em
-     *
      * @return array - array with custom indexes
      */
-    protected function getAllCustomIndexes(EntityManagerInterface $em)
+    protected function getAllCustomIndexes()
     {
-        $connection = $em->getConnection();
-        $metadata = $em->getMetadataFactory()
-            ->getAllMetadata();
-        $searchInAllSchemas = $this->isSearchInAllSchemas();
+        $connection = $this->em->getConnection();
+        $metadata = $this->em->getMetadataFactory()->getAllMetadata();
         $currentSchema = CustomIndex::getCurrentSchema($connection);
 
         $result = [];
@@ -121,7 +103,6 @@ class IndexUpdateCommand extends Command
             $tablePostfix = false
         ) use (
             &$result,
-            $searchInAllSchemas,
             $currentSchema
         ) {
             if ($indexes = $this->readEntityIndexes($meta)) {
@@ -129,7 +110,7 @@ class IndexUpdateCommand extends Command
                     $schema = $meta->getSchemaName() ?: $currentSchema;
 
                     // skip index from side schema in single schema mode
-                    if (!$searchInAllSchemas && $schema != $currentSchema) {
+                    if (!$this->searchInAllSchemas && $schema != $currentSchema) {
                         continue;
                     }
 
@@ -193,7 +174,7 @@ class IndexUpdateCommand extends Command
 
         $refl = $meta->getReflectionClass();
 
-        $annotation = $this->reader->getClassAnnotation($refl, self::CUSTOM_INDEXES_ANNOTATION);
+        $annotation = $this->reader->getClassAnnotation($refl, CustomIndexes::class);
         if ($annotation) {
             return $annotation->indexes;
         }
@@ -222,7 +203,7 @@ class IndexUpdateCommand extends Command
     {
         return CustomIndex::getCurrentIndex(
             $connection,
-            $this->isSearchInAllSchemas()
+            $this->searchInAllSchemas,
         );
     }
 
@@ -234,7 +215,7 @@ class IndexUpdateCommand extends Command
      **/
     protected function dropIndex(Connection $connection, $indexId)
     {
-        if ($this->input->getOption(self::DUMPSQL)) {
+        if ($this->input->getOption(self::DUMP_SQL_OPTION)) {
             $sql = CustomIndex::getDropIndexSql($connection->getDatabasePlatform()->getName(), $indexId);
             $this->output->writeln($sql.';');
             return;
@@ -254,7 +235,7 @@ class IndexUpdateCommand extends Command
     {
         $errors = $this->validator->validate($index);
         if (!count($errors)) {
-            if ($this->input->getOption(self::DUMPSQL)) {
+            if ($this->input->getOption(self::DUMP_SQL_OPTION)) {
                 $sql = $index->getCreateIndexSql($connection->getDatabasePlatform()->getName());
                 $this->output->writeln($sql.';');
                 return;
@@ -327,27 +308,6 @@ class IndexUpdateCommand extends Command
         }
 
         return $parentMeta;
-    }
-
-    /**
-     * Get container
-     *
-     * @return CotainerInterface
-     */
-    protected function getContainer()
-    {
-        return $this->getApplication()
-            ->getKernel()
-            ->getContainer();
-    }
-
-    /**
-     * @return bool
-     */
-    protected function isSearchInAllSchemas()
-    {
-        return $this->getContainer()
-            ->getParameter('intaro.custom_index.search_in_all_schemas');
     }
 
     protected function quoteSchema($name)
