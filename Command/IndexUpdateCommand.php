@@ -240,15 +240,8 @@ class IndexUpdateCommand extends Command
             return;
         }
 
-        $result = CustomIndex::drop($connection, $indexId);
-
-        if ($result) {
-            $this->output->writeln("<info>Index ". $indexId ." was dropped.</info>");
-        } else {
-            $this->output->writeln("<error>Index ". $indexId ." was not dropped.</error>");
-        }
-
-        return $result;
+        CustomIndex::drop($connection, $indexId);
+        $this->output->writeln("<info>Index ". $indexId ." was dropped.</info>");
     }
 
     /**
@@ -267,20 +260,17 @@ class IndexUpdateCommand extends Command
                 return;
             }
 
-            $result = $index->create($connection);
-
+            $index->create($connection);
             $this->output->writeln("<info>Index ". $index->getName() ." was created.</info>");
 
-            return $result;
-        } else {
-            $this->output->writeln("<error>Index ". $index->getName() ." was not created.</error>");
-
-            foreach ($errors as $error) {
-                $this->outputViolation($error);
-            }
+            return;
         }
 
-        return false;
+        $this->output->writeln("<error>Index ". $index->getName() ." was not created.</error>");
+
+        foreach ($errors as $error) {
+            $this->outputViolation($error);
+        }
     }
 
     /**
