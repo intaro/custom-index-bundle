@@ -69,21 +69,14 @@ class CustomIndex
     }
 
     /**
-     * drop index
-     *
      * @param Connection $con
-     *
-     * @return bool
      **/
     public static function drop(Connection $con, $indexId)
     {
-        $platform = $con->getDatabasePlatform()
-            ->getName();
-
+        $platform = $con->getDatabasePlatform()->getName();
         $sql = self::getDropIndexSql($platform, $indexId);
-
-        $st = $con->prepare($sql);
-        return $st->execute();
+        $statement = $con->prepare($sql);
+        $statement->executeStatement();
     }
 
     /**
@@ -116,16 +109,13 @@ class CustomIndex
     public static function getCurrentSchema(Connection $con)
     {
         if (!isset(self::$currentSchema)) {
-            $platform = $con->getDatabasePlatform()
-                ->getName();
-
+            $platform = $con->getDatabasePlatform()->getName();
             $sql = self::getCurrentSchemaSql($platform);
-            $st = $con->prepare($sql);
-            $st->execute();
-            $result = $st->fetch();
+            $statement = $con->prepare($sql);
+            $result = $statement->executeQuery();
+            $data = $result->fetchAssociative();
 
-            self::$currentSchema = isset($result['current_schema']) ?
-                $result['current_schema'] : null;
+            self::$currentSchema = isset($data['current_schema']) ? $data['current_schema'] : null;
         }
 
         return self::$currentSchema;
@@ -155,21 +145,20 @@ class CustomIndex
 
     public static function getCurrentIndex(Connection $con, $searchInAllSchemas)
     {
-        $platform = $con->getDatabasePlatform()
-            ->getName();
-
+        $platform = $con->getDatabasePlatform()->getName();
         $sql = self::getCurrentIndexSql($platform, $searchInAllSchemas);
-        $st = $con->prepare($sql);
-        $st->execute([self::PREFIX . '%']);
+        $statement = $con->prepare($sql);
+        $statement->bindValue('indexName', self::PREFIX . '%');
+        $result = $statement->executeQuery();
 
-        $result = [];
-        if ($data = $st->fetchAll()) {
+        $indexesNames = [];
+        if ($data = $result->fetchAllAssociative()) {
             foreach ($data as $row) {
-                $result[] = $row['relname'];
+                $indexesNames[] = $row['relname'];
             }
         }
 
-        return $result;
+        return $indexesNames;
     }
 
     /**
@@ -185,7 +174,7 @@ class CustomIndex
             case self::PLATFROM_POSTGRESQL:
                 $sql = "
                     SELECT schemaname || '.' || indexname as relname FROM pg_indexes
-                    WHERE indexname LIKE ?
+                    WHERE indexname LIKE :indexName
                 ";
                 if (!$searchInAllSchemas) {
                     $sql .= " AND schemaname = current_schema()";
@@ -234,22 +223,14 @@ class CustomIndex
     }
 
     /**
-     * create index
-     *
      * @param Connection $con
-     *
-     * @return bool
      **/
     public function create(Connection $con)
     {
-        $platform = $con->getDatabasePlatform()
-            ->getName();
-
+        $platform = $con->getDatabasePlatform()->getName();
         $sql = $this->getCreateIndexSql($platform);
-        $st = $con->prepare($sql);
-        $result = $st->execute();
-
-        return $result;
+        $statement = $con->prepare($sql);
+        $statement->executeStatement();
     }
 
     /**
