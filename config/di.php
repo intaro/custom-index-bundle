@@ -1,8 +1,8 @@
 <?php
 
 use Intaro\CustomIndexBundle\Command\IndexUpdateCommand;
-use Intaro\CustomIndexBundle\Metadata\Annotation\Reader;
 use Intaro\CustomIndexBundle\DBAL\QueryExecutor;
+use Intaro\CustomIndexBundle\Metadata\Reader;
 use Intaro\CustomIndexBundle\Validator\Constraints\AllowedIndexTypeValidator;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
