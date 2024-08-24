@@ -5,10 +5,9 @@ namespace Intaro\CustomIndexBundle\DependencyInjection;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
-
 class Configuration implements ConfigurationInterface
 {
-    protected static $availableIndexTypes = ['btree', 'hash', 'gin', 'gist'];
+    private const AVAILABLE_INDEX_TYPES = ['btree', 'hash', 'gin', 'gist'];
 
     /**
      * {@inheritDoc}
@@ -16,9 +15,7 @@ class Configuration implements ConfigurationInterface
     public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('intaro_custom_index');
-        $rootNode = \method_exists($treeBuilder, 'getRootNode')
-            ? $treeBuilder->getRootNode() : $treeBuilder->root('intaro_custom_index');
-
+        $rootNode = $treeBuilder->getRootNode();
         $rootNode
             ->children()
                 // if true update indexes in all db schemas
@@ -29,12 +26,12 @@ class Configuration implements ConfigurationInterface
                 ->arrayNode('allowed_index_types')
                     ->prototype('scalar')
                         ->validate()
-                            ->ifNotInArray(self::$availableIndexTypes)
-                            ->thenInvalid("Unknown index type. Allowed types: ".implode(', ', self::$availableIndexTypes).".")
+                            ->ifNotInArray(self::AVAILABLE_INDEX_TYPES)
+                            ->thenInvalid("Unknown index type. Allowed types: ".implode(', ', self::AVAILABLE_INDEX_TYPES).".")
                         ->end()
                     ->end()
                     ->cannotBeEmpty()
-                    ->defaultValue(self::$availableIndexTypes)
+                    ->defaultValue(self::AVAILABLE_INDEX_TYPES)
                 ->end()
             ->end();
 

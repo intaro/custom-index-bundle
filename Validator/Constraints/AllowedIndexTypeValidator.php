@@ -2,35 +2,26 @@
 
 namespace Intaro\CustomIndexBundle\Validator\Constraints;
 
-use Intaro\CustomIndexBundle\Validator\Constraints\AllowedIndexType;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 
 class AllowedIndexTypeValidator extends ConstraintValidator
 {
-    private static $constraintClass = 'Intaro\CustomIndexBundle\Validator\Constraints\AllowedIndexType';
-
     /**
-     * @var string[]
+     * @param array<string> $allowedIndexTypes
      */
-    protected $allowedIndexTypes;
-
-    /**
-     * @param string[] $allowedIndexTypes
-     */
-    public function __construct(array $allowedIndexTypes)
+    public function __construct(private readonly array $allowedIndexTypes)
     {
-        $this->allowedIndexTypes = $allowedIndexTypes;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function validate($value, Constraint $constraint)
+    public function validate(mixed $value, Constraint $constraint): void
     {
         if (!$constraint instanceof AllowedIndexType) {
-            throw new UnexpectedTypeException($constraint, self::$constraintClass);
+            throw new UnexpectedTypeException($constraint, AllowedIndexType::class);
         }
 
         if (null === $value || '' === $value) {
@@ -41,7 +32,7 @@ class AllowedIndexTypeValidator extends ConstraintValidator
             throw new UnexpectedTypeException($value, 'string');
         }
 
-        if (!in_array($value, $this->allowedIndexTypes)) {
+        if (!in_array($value, $this->allowedIndexTypes, true)) {
             $this->context->addViolation(
                 $constraint->message,
                 [

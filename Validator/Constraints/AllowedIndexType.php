@@ -2,18 +2,16 @@
 
 namespace Intaro\CustomIndexBundle\Validator\Constraints;
 
+use Attribute;
 use Symfony\Component\Validator\Constraint;
 
-/**
- * @Annotation
- * @Target({"PROPERTY", "METHOD", "ANNOTATION"})
- */
+#[Attribute(Attribute::TARGET_PROPERTY | Attribute::TARGET_METHOD)]
 class AllowedIndexType extends Constraint
 {
-    public $message = 'Index type {{ type }} is not allowed. List of allowed types: {{ allowed_types }}.';
+    public string $message = 'Index type {{ type }} is not allowed. List of allowed types: {{ allowed_types }}.';
 
-    public function validatedBy()
+    public function validatedBy(): string
     {
-        return \get_class($this).'Validator';
+        return AllowedIndexTypeValidator::class;
     }
 }
