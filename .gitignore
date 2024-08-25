@@ -1,6 +1,6 @@
 composer.lock
 composer.phar
-vendor/*
+/vendor
 
 # Other
 .DS_Store

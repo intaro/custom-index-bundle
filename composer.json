@@ -1,7 +1,7 @@
 {
     "name": "intaro/custom-index-bundle",
     "description": "Annotation and command for control entity custom indexes",
-    "keywords": ["symfony2", "index", "postgresql-index"],
+    "keywords": ["symfony", "index", "postgresql-index"],
     "type": "symfony-bundle",
     "license": "MIT",
     "authors": [{
