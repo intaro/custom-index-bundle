@@ -59,6 +59,7 @@ final class Reader implements ReaderInterface
             $index = new CustomIndex(
                 $tableName,
                 $schema,
+                $currentSchema,
                 $attributeArguments['columns'] ?? [],
                 $name . ($name && $tablePostfix ? '_' . $tableName : ''),
                 $attributeArguments['unique'] ?? false,
