@@ -9,7 +9,6 @@ final class CustomIndex
 {
     public const PREFIX = 'i_cindex_';
     private const UNIQUE = 'unique';
-    private const DEFAULT_SCHEMA = 'public';
 
     #[Assert\Length(min: 1, max: 63, minMessage: 'Name must be set', maxMessage: 'Name is too long')]
     private ?string $name;
@@ -28,10 +27,12 @@ final class CustomIndex
     #[Assert\Length(min: 1, max: 63, minMessage: 'TableName must be set', maxMessage: 'TableName is too long')]
     private string $tableName;
     private string $schema;
+    private string $currentSchema;
 
     public function __construct(
         string $tableName,
         string $schema,
+        string $currentSchema,
         array|string $columns,
         ?string $name = null,
         bool $unique = false,
@@ -44,6 +45,7 @@ final class CustomIndex
         $this->using = $using;
         $this->where = (string) $where;
         $this->schema = $schema;
+        $this->currentSchema = $currentSchema;
 
         if (!empty($name)) {
             $this->setName($name);
@@ -56,8 +58,8 @@ final class CustomIndex
 
     public function getTableName(): string
     {
-        if ($this->getSchema() !== self::DEFAULT_SCHEMA) {
-            return $this->getSchema() . '.' . $this->tableName;
+        if ($this->schema !== $this->currentSchema) {
+            return $this->schema . '.' . $this->tableName;
         }
 
         return $this->tableName;
