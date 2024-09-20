@@ -42,7 +42,12 @@ final class ExtendedPlatform extends PostgreSQLPlatform
 
     public function indexesNamesSelectSQL(bool $searchInAllSchemas): string
     {
-        $sql = "SELECT schemaname || '.' || indexname as relname FROM pg_indexes WHERE indexname LIKE :indexName";
+        $sql = "
+            SELECT schemaname || '.' || indexname as relname 
+            FROM pg_indexes 
+            WHERE indexname LIKE :indexName
+            AND indexname NOT LIKE '%_ccnew'
+        ";
         if (!$searchInAllSchemas) {
             $sql .= " AND schemaname = current_schema()";
         }
