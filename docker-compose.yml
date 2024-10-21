@@ -1,0 +1,8 @@
+services:
+    php:
+        build:
+            context: .
+            args:
+                PHP_IMAGE_TAG: ${PHP_IMAGE_TAG:-8.1}
+        volumes:
+            - "./:/opt/test"
