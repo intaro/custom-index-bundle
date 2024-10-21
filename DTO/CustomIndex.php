@@ -12,6 +12,8 @@ final class CustomIndex
 
     #[Assert\Length(min: 1, max: 63, minMessage: 'Name must be set', maxMessage: 'Name is too long')]
     private ?string $name;
+
+    /** @var string[] */
     #[Assert\Count(min: 1, minMessage: 'You must specify at least one column')]
     #[Assert\All([
         new Assert\Type([
@@ -20,6 +22,7 @@ final class CustomIndex
         ]),
     ])]
     private array $columns = [];
+
     private bool $unique;
     #[AllowedIndexType]
     private ?string $using;
@@ -29,6 +32,9 @@ final class CustomIndex
     private string $schema;
     private string $currentSchema;
 
+    /**
+     * @param string[]|string $columns
+     */
     public function __construct(
         string $tableName,
         string $schema,
@@ -75,6 +81,9 @@ final class CustomIndex
         return $this->name;
     }
 
+    /**
+     * @return string[]
+     */
     public function getColumns(): array
     {
         return $this->columns;
@@ -108,7 +117,10 @@ final class CustomIndex
         $this->setName($name);
     }
 
-    private function setColumns($columns): void
+    /**
+     * @param string[]|string $columns
+     */
+    private function setColumns(array|string $columns): void
     {
         if (is_string($columns)) {
             $columns = [$columns];
@@ -122,7 +134,7 @@ final class CustomIndex
         }
     }
 
-    private function setName($name): void
+    private function setName(string $name): void
     {
         if (!str_starts_with($name, self::PREFIX)) {
             $name = self::PREFIX . $name;

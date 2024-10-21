@@ -7,6 +7,9 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Intaro\CustomIndexBundle\DTO\CustomIndex;
 
+/**
+ * @template T of object
+ */
 final class Reader implements ReaderInterface
 {
     public function __construct(private readonly EntityManagerInterface $em)
@@ -34,6 +37,10 @@ final class Reader implements ReaderInterface
         return $indexNamesToCustomIndexes;
     }
 
+    /**
+     * @param array<string, CustomIndex> $indexNamesToCustomIndexes
+     * @param ClassMetadata<T>           $metadata
+     */
     private function collect(
         array &$indexNamesToCustomIndexes,
         ClassMetadata $metadata,
@@ -72,6 +79,10 @@ final class Reader implements ReaderInterface
         }
     }
 
+    /**
+     * @param ClassMetadata<T> $metadata
+     * @param ClassMetadata<T> $parentMetadata
+     */
     private function getTableNameFromMetadata(ClassMetadata $metadata, ClassMetadata $parentMetadata): string
     {
         if (ClassMetadataInfo::INHERITANCE_TYPE_JOINED === $metadata->inheritanceType) {
@@ -81,18 +92,27 @@ final class Reader implements ReaderInterface
         return $metadata->getTableName();
     }
 
-    /** @return array<\ReflectionAttribute> */
+    /**
+     * @param ClassMetadata<T> $meta
+     *
+     * @return array<\ReflectionAttribute<Attribute\CustomIndex>>
+     */
     private function getCustomIndexesAttributes(ClassMetadata $meta): array
     {
         return $meta->getReflectionClass()->getAttributes(Attribute\CustomIndex::class);
     }
 
+    /**
+     * @param ClassMetadata<T> $meta
+     */
     private function isAbstract(ClassMetadata $meta): bool
     {
         return $meta->getReflectionClass()->isAbstract();
     }
 
     /**
+     * @param array<ClassMetadata<T>> $metadata
+     *
      * @return array<string, mixed>
      */
     private function getAbstractClassesInfo(array $metadata): array
@@ -108,6 +128,7 @@ final class Reader implements ReaderInterface
     }
 
     /**
+     * @param ClassMetadata<T>     $meta
      * @param array<string, mixed> $abstractClasses
      *
      * @return array<string, mixed>

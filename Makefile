@@ -5,7 +5,7 @@ vendor: composer.json
 	@touch vendor || true
 
 php-cs: vendor
-	@$(PHP) vendor/bin/php-cs-fixer check -vv
+	@$(PHP) vendor/bin/php-cs-fixer fix --using-cache=no -vv
 
 phpstan: vendor
 	@$(PHP) vendor/bin/phpstan analyse

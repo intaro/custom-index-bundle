@@ -21,8 +21,8 @@ class IndexUpdateCommand extends Command
 {
     private const DUMP_SQL_OPTION = 'dump-sql';
 
-    private ?InputInterface $input;
-    private ?OutputInterface $output;
+    private InputInterface $input;
+    private OutputInterface $output;
 
     public function __construct(
         private readonly ValidatorInterface $validator,
