@@ -1,0 +1,10 @@
+parameters:
+    level: 8
+    paths:
+        - Command/
+        - config/
+        - DBAL/
+        - DTO/
+        - Metadata/
+        - Validator/
+        - IntaroCustomIndexBundle.php

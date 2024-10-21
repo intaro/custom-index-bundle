@@ -9,19 +9,19 @@ final class ExtendedPlatform extends PostgreSQLPlatform
 {
     public function createIndexSQL(CustomIndex $index): string
     {
-        $sql = 'CREATE ';
+        $sql = 'CREATE';
         if ($index->getUnique()) {
-            $sql .= 'UNIQUE ';
+            $sql .= ' UNIQUE';
         }
 
-        $sql .= 'INDEX ' .  $index->getName() . ' ';
-        $sql .= 'ON ' . $index->getTableName() . ' ';
+        $sql .= ' INDEX ' . $index->getName();
+        $sql .= ' ON ' . $index->getTableName();
 
         if ($index->getUsing()) {
-            $sql .= 'USING ' . $index->getUsing() . ' ';
+            $sql .= ' USING ' . $index->getUsing();
         }
 
-        $sql .= '(' . implode(', ', $index->getColumns()) . ')';
+        $sql .= ' (' . implode(', ', $index->getColumns()) . ')';
 
         if ($index->getWhere()) {
             $sql .= ' WHERE ' . $index->getWhere();
@@ -49,7 +49,7 @@ final class ExtendedPlatform extends PostgreSQLPlatform
             AND indexname NOT LIKE '%_ccnew'
         ";
         if (!$searchInAllSchemas) {
-            $sql .= " AND schemaname = current_schema()";
+            $sql .= ' AND schemaname = current_schema()';
         }
 
         return $sql;

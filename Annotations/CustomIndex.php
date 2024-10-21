@@ -6,6 +6,7 @@ use Doctrine\Common\Annotations\Annotation;
 
 /**
  * @deprecated left only for automatic conversion of annotations to attributes
+ *
  * @Annotation
  * @Target("ANNOTATION")
  *
@@ -47,5 +48,4 @@ class CustomIndex extends Annotation
      * @var array
      */
     public $columns;
-
 }

@@ -9,9 +9,6 @@ class Configuration implements ConfigurationInterface
 {
     private const AVAILABLE_INDEX_TYPES = ['btree', 'hash', 'gin', 'gist'];
 
-    /**
-     * {@inheritDoc}
-     */
     public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('intaro_custom_index');
@@ -27,13 +24,14 @@ class Configuration implements ConfigurationInterface
                     ->prototype('scalar')
                         ->validate()
                             ->ifNotInArray(self::AVAILABLE_INDEX_TYPES)
-                            ->thenInvalid("Unknown index type. Allowed types: ".implode(', ', self::AVAILABLE_INDEX_TYPES).".")
+                            ->thenInvalid('Unknown index type. Allowed types: ' . implode(', ', self::AVAILABLE_INDEX_TYPES) . '.')
                         ->end()
                     ->end()
                     ->cannotBeEmpty()
                     ->defaultValue(self::AVAILABLE_INDEX_TYPES)
                 ->end()
-            ->end();
+            ->end()
+        ;
 
         return $treeBuilder;
     }
