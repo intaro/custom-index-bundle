@@ -96,7 +96,7 @@ class IndexUpdateCommand extends Command
     private function dropIndex(ExtendedPlatform $platform, string $indexName): void
     {
         if ($this->input->getOption(self::DUMP_SQL_OPTION)) {
-            $this->output->writeln($platform->getDropIndexSQL($indexName) . ';');
+            $this->output->writeln($platform->getDropIndexSQL($indexName, '') . ';');
 
             return;
         }

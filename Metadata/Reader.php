@@ -4,7 +4,6 @@ namespace Intaro\CustomIndexBundle\Metadata;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Intaro\CustomIndexBundle\DTO\CustomIndex;
 
 /**
@@ -85,7 +84,7 @@ final class Reader implements ReaderInterface
      */
     private function getTableNameFromMetadata(ClassMetadata $metadata, ClassMetadata $parentMetadata): string
     {
-        if (ClassMetadataInfo::INHERITANCE_TYPE_JOINED === $metadata->inheritanceType) {
+        if (ClassMetadata::INHERITANCE_TYPE_JOINED === $metadata->inheritanceType) {
             return $parentMetadata->getTableName();
         }
 
@@ -99,7 +98,7 @@ final class Reader implements ReaderInterface
      */
     private function getCustomIndexesAttributes(ClassMetadata $meta): array
     {
-        return $meta->getReflectionClass()->getAttributes(Attribute\CustomIndex::class);
+        return $this->getMetaReflectionClass($meta)->getAttributes(Attribute\CustomIndex::class);
     }
 
     /**
@@ -107,7 +106,7 @@ final class Reader implements ReaderInterface
      */
     private function isAbstract(ClassMetadata $meta): bool
     {
-        return $meta->getReflectionClass()->isAbstract();
+        return $this->getMetaReflectionClass($meta)->isAbstract();
     }
 
     /**
@@ -135,7 +134,7 @@ final class Reader implements ReaderInterface
      */
     private function searchParentsWithIndex(ClassMetadata $meta, array $abstractClasses): array
     {
-        $reflectionClass = $meta->getReflectionClass();
+        $reflectionClass = $this->getMetaReflectionClass($meta);
         $parentMeta = [];
         foreach ($abstractClasses as $entityName => $entityMeta) {
             if ($reflectionClass->isSubclassOf($entityName)) {
@@ -144,5 +143,20 @@ final class Reader implements ReaderInterface
         }
 
         return $parentMeta;
+    }
+
+    /**
+     * @param ClassMetadata<T> $meta
+     *
+     * @return \ReflectionClass<T>
+     */
+    private function getMetaReflectionClass(ClassMetadata $meta): \ReflectionClass
+    {
+        $reflectionClass = $meta->getReflectionClass();
+        if (null === $reflectionClass) {
+            throw new \RuntimeException('Reflection class is not found for ' . $meta->getName());
+        }
+
+        return $reflectionClass;
     }
 }
