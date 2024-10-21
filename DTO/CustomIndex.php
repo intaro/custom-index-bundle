@@ -15,7 +15,7 @@ final class CustomIndex
     #[Assert\Count(min: 1, minMessage: 'You must specify at least one column')]
     #[Assert\All([
         new Assert\Type([
-            'type' =>'string',
+            'type' => 'string',
             'message' => 'Column should be type of string',
         ]),
     ])]
@@ -104,9 +104,8 @@ final class CustomIndex
         }
 
         $strToMd5 .= $this->getUsing() . ($this->getWhere() ? '_' . $this->getWhere() : '');
-        $name = self::PREFIX . ( $this->getUnique() ? self::UNIQUE . '_' : '' ) . md5($strToMd5);
+        $name = self::PREFIX . ($this->getUnique() ? self::UNIQUE . '_' : '') . md5($strToMd5);
         $this->setName($name);
-
     }
 
     private function setColumns($columns): void

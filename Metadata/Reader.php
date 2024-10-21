@@ -40,7 +40,7 @@ final class Reader implements ReaderInterface
         string $tableName,
         string $currentSchema,
         bool $searchInAllSchemas,
-        bool $tablePostfix = false
+        bool $tablePostfix = false,
     ): void {
         $reflectionAttributes = $this->getCustomIndexesAttributes($metadata);
         if (empty($reflectionAttributes)) {
@@ -74,7 +74,7 @@ final class Reader implements ReaderInterface
 
     private function getTableNameFromMetadata(ClassMetadata $metadata, ClassMetadata $parentMetadata): string
     {
-        if ($metadata->inheritanceType === ClassMetadataInfo::INHERITANCE_TYPE_JOINED) {
+        if (ClassMetadataInfo::INHERITANCE_TYPE_JOINED === $metadata->inheritanceType) {
             return $parentMetadata->getTableName();
         }
 
@@ -84,7 +84,7 @@ final class Reader implements ReaderInterface
     /** @return array<\ReflectionAttribute> */
     private function getCustomIndexesAttributes(ClassMetadata $meta): array
     {
-        return $meta->getReflectionClass()->getAttributes(\Intaro\CustomIndexBundle\Metadata\Attribute\CustomIndex::class);
+        return $meta->getReflectionClass()->getAttributes(Attribute\CustomIndex::class);
     }
 
     private function isAbstract(ClassMetadata $meta): bool
@@ -92,9 +92,7 @@ final class Reader implements ReaderInterface
         return $meta->getReflectionClass()->isAbstract();
     }
 
-
     /**
-     * @param array $metadata
      * @return array<string, mixed>
      */
     private function getAbstractClassesInfo(array $metadata): array
@@ -111,6 +109,7 @@ final class Reader implements ReaderInterface
 
     /**
      * @param array<string, mixed> $abstractClasses
+     *
      * @return array<string, mixed>
      */
     private function searchParentsWithIndex(ClassMetadata $meta, array $abstractClasses): array
